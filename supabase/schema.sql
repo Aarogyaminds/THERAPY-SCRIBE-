@@ -1,7 +1,8 @@
 -- Aarogya Minds clinic app — Supabase schema
 -- Run this once in the Supabase SQL editor (Dashboard > SQL Editor > New query).
--- Single-user app: RLS is left off tables since the only access path is the
--- Next.js server (service-role key), never the browser directly.
+-- Row Level Security is enabled on every table with zero policies, so only our
+-- server's private service_role key can read/write — even if the public
+-- "anon"/"publishable" key ever leaked, it could not touch this data.
 
 create extension if not exists "pgcrypto";
 
@@ -80,5 +81,27 @@ create index on life_context_entities(patient_id);
 create index on life_context_mentions(entity_id);
 create index on open_threads(patient_id, status);
 
--- After running this, create a Storage bucket named "session-docs" (Dashboard > Storage
--- > New bucket, keep it private/not public) — that's where generated .docx files land.
+alter table patients enable row level security;
+alter table sessions enable row level security;
+alter table notes enable row level security;
+alter table tabs enable row level security;
+alter table life_context_entities enable row level security;
+alter table life_context_mentions enable row level security;
+alter table open_threads enable row level security;
+
+-- No policies are created (deny-by-default). Our server's service_role key must
+-- be explicitly granted table access separately from RLS — Supabase normally
+-- does this automatically for new tables, but this project has "Automatically
+-- expose new tables" turned off (a deliberate extra safeguard), so it's done
+-- explicitly here instead, including for tables created after this script runs.
+grant usage on schema public to service_role;
+grant all on all tables in schema public to service_role;
+grant all on all sequences in schema public to service_role;
+alter default privileges in schema public grant all on tables to service_role;
+alter default privileges in schema public grant all on sequences to service_role;
+
+-- After running this, create two Storage buckets (Dashboard > Storage > New bucket),
+-- both private/not public:
+--   session-audio — temporary holding spot for raw recordings, deleted right after
+--                    transcription
+--   session-docs  — the generated .docx file for every session
