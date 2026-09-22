@@ -15,6 +15,13 @@ const tabList = [
   { key: "patterns", label: "Patterns" },
   { key: "openThreads", label: "Open Threads" },
 ];
+const tabLabel = (key) => tabList.find((t) => t.key === key)?.label || key;
+
+function friendlyTabErrorCause(message) {
+  if (message.includes("429")) return "Google's AI service was briefly too busy to respond.";
+  if (message.includes("503")) return "Google's AI service had a temporary hiccup.";
+  return "Something went wrong talking to the AI service.";
+}
 
 export default function Profile({ patient, onRefresh, onSaveMeetLink }) {
   const [activeTab, setActiveTab] = useState("brief");
@@ -72,10 +79,20 @@ export default function Profile({ patient, onRefresh, onSaveMeetLink }) {
 
         {tabErrors.length > 0 && (
           <div className="mb-6 border border-[#B96B72]/30 bg-[#B96B72]/5 rounded-sm p-4 text-sm text-[#B96B72]">
-            Some clinical tabs failed to update from this session and were left unchanged — retry from Therapist Notes if needed:
+            This session saved fine, but {tabErrors.length === 1 ? "one clinical tab" : `${tabErrors.length} clinical tabs`} didn't
+            update — they've been left as they were, nothing was lost:
             <ul className="list-disc ml-5 mt-1">
-              {tabErrors.map((e, i) => <li key={i}>{e.tab}: {e.message}</li>)}
+              {tabErrors.map((e, i) => (
+                <li key={i}>
+                  <span className="font-medium">{tabLabel(e.tab)}</span> — {friendlyTabErrorCause(e.message)}
+                  <details className="inline ml-1">
+                    <summary className="inline cursor-pointer text-xs text-[#B96B72]/70">details</summary>
+                    <div className="text-xs mt-1 whitespace-pre-wrap">{e.message}</div>
+                  </details>
+                </li>
+              ))}
             </ul>
+            <p className="mt-2 text-xs">The session and its transcript are safely saved either way. This is rare — it already retries automatically a few times before showing here.</p>
           </div>
         )}
 
