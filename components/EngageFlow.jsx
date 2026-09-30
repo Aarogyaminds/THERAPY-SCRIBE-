@@ -33,7 +33,12 @@ export default function EngageFlow({ patientId, onDone, onCancel, onBusyChange }
   const startWithStream = (stream) => {
     streamsRef.current.push(stream);
     chunksRef.current = [];
-    const recorder = new MediaRecorder(stream);
+    // Speech-only audio doesn't need a high bitrate — Chrome's unconstrained
+    // default can run ~100+ kbps, which turns a long session into a huge file
+    // (a 70-minute recording hit Supabase's upload size cap at default quality).
+    // 32kbps is still clear for transcription and keeps even a 2-hour session
+    // well under any reasonable limit.
+    const recorder = new MediaRecorder(stream, { audioBitsPerSecond: 32000 });
     recorder.ondataavailable = (e) => chunksRef.current.push(e.data);
     recorder.start();
     mediaRecorderRef.current = recorder;
