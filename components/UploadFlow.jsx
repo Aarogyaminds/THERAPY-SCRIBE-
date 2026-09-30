@@ -3,7 +3,7 @@ import { useState, useRef } from "react";
 import mammoth from "mammoth";
 import { Upload, Loader2 } from "lucide-react";
 
-export default function UploadFlow({ patientId, onDone, onCancel }) {
+export default function UploadFlow({ patientId, onDone, onCancel, onBusyChange }) {
   const [stage, setStage] = useState("idle");
   const [errorMsg, setErrorMsg] = useState("");
   const fileInputRef = useRef(null);
@@ -12,6 +12,7 @@ export default function UploadFlow({ patientId, onDone, onCancel }) {
     const file = e.target.files[0];
     if (!file) return;
     setStage("processing");
+    onBusyChange?.(true);
     try {
       const arrayBuffer = await file.arrayBuffer();
       const result = await mammoth.extractRawText({ arrayBuffer });
@@ -28,6 +29,7 @@ export default function UploadFlow({ patientId, onDone, onCancel }) {
     } catch (err) {
       setErrorMsg("Couldn't process that file: " + err.message);
       setStage("error");
+      onBusyChange?.(false);
     }
   };
 

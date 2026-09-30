@@ -48,6 +48,7 @@ export async function POST(req) {
       return NextResponse.json({ error: "Unknown mode" }, { status: 400 });
     }
   } catch (e) {
+    if (e.noSpeechDetected) return NextResponse.json({ error: e.message }, { status: 422 });
     return NextResponse.json({ error: `Gemini processing failed: ${e.message}` }, { status: 502 });
   }
 

@@ -1,7 +1,7 @@
 "use client";
 import { Plus, Users, Settings } from "lucide-react";
 
-export default function Sidebar({ patients, selectedId, onSelect, onAddClick, onLogout }) {
+export default function Sidebar({ patients, selectedId, onSelect, onAddClick, onLogout, busy }) {
   return (
     <div className="w-72 shrink-0 border-r border-[#26314F]/12 h-full flex flex-col bg-[#FAF6EF]">
       <div className="px-6 pt-8 pb-5 flex items-start justify-between">
@@ -9,13 +9,24 @@ export default function Sidebar({ patients, selectedId, onSelect, onAddClick, on
           <h1 className="text-2xl text-[#26314F]" style={{ fontFamily: "Fraunces, serif" }}>Aarogya Minds</h1>
           <p className="text-sm text-[#26314F]/55 mt-1">Session workspace</p>
         </div>
-        <button onClick={onLogout} title="Log out" className="text-[#26314F]/40 hover:text-[#26314F] mt-1">
+        <button
+          onClick={onLogout}
+          disabled={busy}
+          title={busy ? "Wait for the current session to finish processing" : "Log out"}
+          className="text-[#26314F]/40 hover:text-[#26314F] mt-1 disabled:opacity-30 disabled:cursor-not-allowed"
+        >
           <Settings size={17} />
         </button>
       </div>
+      {busy && (
+        <p className="mx-6 mb-3 text-xs text-[#B96B72]/80 leading-relaxed">
+          A session is still processing — switching patients or registering a new one is paused until it finishes, so nothing gets lost.
+        </p>
+      )}
       <button
         onClick={onAddClick}
-        className="mx-6 mb-4 flex items-center gap-2 text-sm text-[#26314F] border border-[#26314F]/25 rounded-sm px-3 py-2 hover:bg-[#26314F]/5 transition-colors"
+        disabled={busy}
+        className="mx-6 mb-4 flex items-center gap-2 text-sm text-[#26314F] border border-[#26314F]/25 rounded-sm px-3 py-2 hover:bg-[#26314F]/5 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
       >
         <Plus size={15} /> Register patient
       </button>
@@ -28,7 +39,8 @@ export default function Sidebar({ patients, selectedId, onSelect, onAddClick, on
           <button
             key={p.id}
             onClick={() => onSelect(p.id)}
-            className={`w-full text-left px-6 py-3 border-l-2 transition-colors ${
+            disabled={busy && selectedId !== p.id}
+            className={`w-full text-left px-6 py-3 border-l-2 transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
               selectedId === p.id ? "border-[#26314F] bg-[#26314F]/[0.04]" : "border-transparent hover:bg-[#26314F]/[0.02]"
             }`}
           >

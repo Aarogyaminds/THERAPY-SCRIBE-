@@ -23,12 +23,13 @@ function friendlyTabErrorCause(message) {
   return "Something went wrong talking to the AI service.";
 }
 
-export default function Profile({ patient, onRefresh, onSaveMeetLink }) {
+export default function Profile({ patient, onRefresh, onSaveMeetLink, onBusyChange }) {
   const [activeTab, setActiveTab] = useState("brief");
   const [mode, setMode] = useState("none");
   const [tabErrors, setTabErrors] = useState([]);
 
   const handleFlowDone = async (errors) => {
+    onBusyChange?.(false);
     setMode("none");
     setTabErrors(errors || []);
     await onRefresh();
@@ -106,9 +107,9 @@ export default function Profile({ patient, onRefresh, onSaveMeetLink }) {
             </button>
           </div>
         ) : mode === "engage" ? (
-          <div className="mb-8"><EngageFlow patientId={patient.id} onDone={handleFlowDone} onCancel={() => setMode("none")} /></div>
+          <div className="mb-8"><EngageFlow patientId={patient.id} onDone={handleFlowDone} onCancel={() => setMode("none")} onBusyChange={onBusyChange} /></div>
         ) : (
-          <div className="mb-8"><UploadFlow patientId={patient.id} onDone={handleFlowDone} onCancel={() => setMode("none")} /></div>
+          <div className="mb-8"><UploadFlow patientId={patient.id} onDone={handleFlowDone} onCancel={() => setMode("none")} onBusyChange={onBusyChange} /></div>
         )}
 
         <div className="mb-9">

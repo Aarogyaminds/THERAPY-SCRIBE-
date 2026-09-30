@@ -8,9 +8,11 @@ function fmt(s) {
   return `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
 }
 
+const MIN_RECORDING_SECONDS = 10;
+
 // onDone(tabErrors) is called once the session + tabs are fully saved server-side;
 // the caller is expected to refetch the patient rather than merge state by hand.
-export default function EngageFlow({ patientId, onDone, onCancel }) {
+export default function EngageFlow({ patientId, onDone, onCancel, onBusyChange }) {
   const [stage, setStage] = useState("consent"); // consent | chooseMode | recording | processing | review | error
   const [seconds, setSeconds] = useState(0);
   const [summary, setSummary] = useState("");
@@ -68,7 +70,19 @@ export default function EngageFlow({ patientId, onDone, onCancel }) {
   const stopRecording = async () => {
     const recorder = mediaRecorderRef.current;
     if (!recorder) return;
+
+    // Too short to be a real session — don't waste an AI call on it, and don't
+    // risk the model inventing a conversation out of near-silence.
+    if (seconds < MIN_RECORDING_SECONDS) {
+      recorder.onstop = () => streamsRef.current.forEach((s) => s.getTracks().forEach((t) => t.stop()));
+      recorder.stop();
+      setErrorMsg(`Recording was only ${seconds}s — too short to process. Record at least ${MIN_RECORDING_SECONDS}s.`);
+      setStage("error");
+      return;
+    }
+
     setStage("processing");
+    onBusyChange?.(true);
     recorder.onstop = async () => {
       streamsRef.current.forEach((s) => s.getTracks().forEach((t) => t.stop()));
       try {
@@ -108,6 +122,7 @@ export default function EngageFlow({ patientId, onDone, onCancel }) {
       } catch (e) {
         setErrorMsg(e.message);
         setStage("error");
+        onBusyChange?.(false);
       }
     };
     recorder.stop();

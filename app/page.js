@@ -11,6 +11,7 @@ export default function ClinicApp() {
   const [selectedPatient, setSelectedPatient] = useState(null);
   const [adding, setAdding] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [busy, setBusy] = useState(false);
 
   const refreshList = useCallback(async () => {
     const res = await fetch("/api/patients");
@@ -39,6 +40,7 @@ export default function ClinicApp() {
   }, [selectedId, refreshSelected]);
 
   const handleSelect = (id) => {
+    if (busy) return;
     setSelectedId(id);
     setAdding(false);
   };
@@ -81,11 +83,17 @@ export default function ClinicApp() {
 
   return (
     <div className="flex h-screen bg-[#FAF6EF]">
-      <Sidebar patients={patients} selectedId={selectedId} onSelect={handleSelect} onAddClick={() => setAdding(true)} onLogout={handleLogout} />
+      <Sidebar patients={patients} selectedId={selectedId} onSelect={handleSelect} onAddClick={() => !busy && setAdding(true)} onLogout={handleLogout} busy={busy} />
       {adding ? (
         <div className="flex-1 overflow-y-auto"><AddPatientForm onCancel={() => setAdding(false)} onSave={handleAddPatient} /></div>
       ) : selectedPatient ? (
-        <Profile key={selectedPatient.id} patient={selectedPatient} onRefresh={() => refreshSelected(selectedId)} onSaveMeetLink={handleSaveMeetLink} />
+        <Profile
+          key={selectedPatient.id}
+          patient={selectedPatient}
+          onRefresh={() => refreshSelected(selectedId)}
+          onSaveMeetLink={handleSaveMeetLink}
+          onBusyChange={setBusy}
+        />
       ) : (
         <div className="flex-1 flex items-center justify-center text-[#26314F]/40 text-sm">Register a patient to begin.</div>
       )}
